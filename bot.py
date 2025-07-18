@@ -11,77 +11,68 @@ from src.config import *
 bot = Bot(BOT_TOKEN)
 dp = Dispatcher()
 
-class NeuroState(StatesGroup):
-    waiting_for_query = State()
 
-async def process_neuro_request(
-    message: types.Message, text: str, max_retries: int = 2
-):
-    for attempt in range(max_retries + 1):
-        processing_message = await message.reply(
-            "Processing your request... Note: Responses are limited to 4096 characters."
-        )
-        client = Together(api_key=API_KEY_TOGETHER.strip())
-        try:
+class Dialogue(StatesGroup):
+    active = State()
 
-            def sync_call():
-                return client.chat.completions.create(
-                    model="meta-llama/Llama-Vision-Free",
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": "You are a helpful assistant. Responses are limited to 4096 characters.",
-                        },
-                        {"role": "user", "content": text},
-                    ],
-                )
 
-            loop = asyncio.get_event_loop()
-            response = await loop.run_in_executor(None, sync_call)
-            answer = response.choices[0].message.content
-            if len(answer) > MAX_MESSAGE_LENGTH:
-                answer = answer[: MAX_MESSAGE_LENGTH - 3] + "..."
-            await message.reply(answer)
-            break
-        except Exception as e:
-            if (
-                "429" in str(e)
-                and "rate limit" in str(e).lower()
-                and attempt < max_retries
-            ):
-                await message.reply("Достигнут лимит запросов. Повторная попытка...")
-                await asyncio.sleep(2)
-            else:
-                error_msg = (
-                    "Извините, достигнут лимит запросов. Попробуйте позже или свяжитесь с Together AI."
-                    if "429" in str(e)
-                    else f"Ошибка: {str(e)}"
-                )
-                await message.reply(error_msg)
-        finally:
-            await processing_message.delete()
+async def process_dialogue_request(message: types.Message, history: list):
+    processing_message = await message.answer("🧠 Думаю...")
+    client = Together(api_key=API_KEY_TOGETHER.strip())
+    try:
+
+        def sync_call():
+            return client.chat.completions.create(
+                model="meta-llama/Llama-Vision-Free", messages=history
+            )
+
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(None, sync_call)
+        answer = response.choices[0].message.content
+
+        if len(answer) > MAX_MESSAGE_LENGTH:
+            answer = answer[: MAX_MESSAGE_LENGTH - 3] + "..."
+
+        return answer
+
+    except Exception as e:
+        error_message = f"Произошла ошибка: {e}"
+        await message.answer(error_message)
+        return None
+    finally:
+        await processing_message.delete()
 
 
 @dp.message(Command("neuro"))
 async def neuro_command(message: types.Message, state: FSMContext):
-    text = message.text[len("/neuro"):].strip()
-    
-    if text:
-        await process_neuro_request(message, text)
-    else:
-        await message.reply("Введите ваш запрос для нейросети или /exit для выхода.")
-        await state.set_state(NeuroState.waiting_for_query)
+    await state.set_state(Dialogue.active)
+    initial_history = [
+        {"role": "system", "content": "You are a helpful conversational assistant."}
+    ]
+    await state.update_data(history=initial_history)
+    await message.answer(
+        "Вы вошли в режим диалога с нейросетью. Просто пишите ваши сообщения.\n\n"
+        "Для выхода введите /exit"
+    )
 
-@dp.message(NeuroState.waiting_for_query)
-async def process_query_in_state(message: types.Message, state: FSMContext):
+
+@dp.message(Dialogue.active)
+async def handle_dialogue(message: types.Message, state: FSMContext):
     if message.text.lower() == "/exit":
-        await message.reply("Выход выполнен. Вы больше не в режиме диалога.")
         await state.clear()
+        await message.answer("Вы вышли из режима диалога. История очищена.")
         return
+    data = await state.get_data()
+    history = data.get("history", [])
 
-    await process_neuro_request(message, message.text)
-    
-    await state.clear()
+    history.append({"role": "user", "content": message.text})
+
+    ai_response = await process_dialogue_request(message, history)
+
+    if ai_response:
+        await message.answer(ai_response)
+        history.append({"role": "assistant", "content": ai_response})
+        await state.update_data(history=history)
 
 
 @dp.message(Command("help"))
@@ -104,47 +95,6 @@ async def cat_command(message: types.Message):
                 await message.reply_photo(photo=cat_link)
             else:
                 await message.reply(text=ERROR_TEXT)
-
-
-# @dp.message(Command("neuro"))
-# async def deepseek_command(message: types.Message):
-#     processing_message = await message.reply(
-#         "Processing your request... Note: Responses are limited to 4096 characters."
-#     )
-
-#     text = message.text[len("/deepseek") :].strip()
-#     if not text:
-#         await message.reply(
-#             "Пожалуйста, укажите запрос после /deepseek, например: /deepseek What is the weather like?"
-#         )
-#         await processing_message.delete()
-#         return
-#     client = Together(api_key=API_KEY_TOGETHER.strip())
-#     try:
-
-#         def sync_call():
-#             return client.chat.completions.create(
-#                 model="meta-llama/Llama-Vision-Free",
-#                 messages=[
-#                     {
-#                         "role": "system",
-#                         "content": "You are a helpful assistant. Responses are limited to 4096 characters.",
-#                     },
-#                     {"role": "user", "content": text},
-#                 ],
-#             )
-
-#         loop = asyncio.get_event_loop()
-#         response = await loop.run_in_executor(None, sync_call)
-#         answer = response.choices[0].message.content
-#         if len(answer) > MAX_MESSAGE_LENGTH:
-#             answer = answer[: MAX_MESSAGE_LENGTH - 3] + "..."
-#         await message.reply(answer)
-#     except Exception as e:
-#         await message.reply(f"Ошибка при обработке запроса: {str(e)}")
-#     finally:
-#         pass
-
 
 
 @dp.message(
