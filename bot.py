@@ -60,17 +60,20 @@ async def neuro_command(message: types.Message, state: FSMContext):
 async def handle_dialogue(message: types.Message, state: FSMContext):
     if message.text.lower() == "/exit":
         await state.clear()
-        await message.answer("Вы вышли из режима диалога. История очищена.")
+        await message.answer("Вы вышли из режима диалога.")
+        return
+    elif message.text[0] == "/":
+        await message.answer(
+            "Вы ввели неподдерживаемую команду. Если вы хотите выйти из режима диалога, введите /exit. "
+            "Или продолжайте общение, не начиная сообщение со слеша."
+        )
         return
     data = await state.get_data()
     history = data.get("history", [])
-
     history.append({"role": "user", "content": message.text})
-
     ai_response = await process_dialogue_request(message, history)
-
     if ai_response:
-        await message.answer(ai_response)
+        await message.answer(ai_response + "\n\nДля выхода введите /exit")
         history.append({"role": "assistant", "content": ai_response})
         await state.update_data(history=history)
 
