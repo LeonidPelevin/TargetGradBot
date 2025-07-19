@@ -18,9 +18,9 @@ async def main():
     bot = Bot(token=config.bot.bot_token)
     dp = Dispatcher()
 
+    dp.include_router(neuro.router)
     dp.include_router(user.router)
     dp.include_router(business.router)
-    dp.include_router(neuro.router)
     dp.include_router(other.router)
 
     await bot.delete_webhook(drop_pending_updates=True)
