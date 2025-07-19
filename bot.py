@@ -1,18 +1,18 @@
 import asyncio
 import logging
-from aiogram import Bot, Dispatcher, types
+
+from aiogram import Bot, Dispatcher
 from src.config.config import Config, load_config
-
-from aiogram.filters import Command
-import aiohttp
-from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import State, StatesGroup
-from together import Together
+from src.handlers import other, user
 
 
-class Dialogue(StatesGroup):
-    active = State()
+# from aiogram.filters import Command
+# from aiogram.fsm.context import FSMContext
+# from aiogram.fsm.state import State, StatesGroup
+# from together import Together
 
+# class Dialogue(StatesGroup):
+#     active = State()
 
 # @dp.message(Command("help"))
 # async def help_command(message: types.Message):
@@ -23,17 +23,6 @@ class Dialogue(StatesGroup):
 # async def start_command(message: types.Message):
 #     await message.reply(text=START_COMMAND)
 
-
-# @dp.message(Command("cat"))
-# async def cat_command(message: types.Message):
-#     async with aiohttp.ClientSession() as session:
-#         async with session.get(API_CATS_URL) as response:
-#             if response.status == 200:
-#                 data = await response.json()
-#                 cat_link = data[0]["url"]
-#                 await message.reply_photo(photo=cat_link)
-#             else:
-#                 await message.reply(text=ERROR_TEXT)
 
 
 # async def process_dialogue_request(message: types.Message, history: list):
@@ -125,6 +114,10 @@ async def main():
 
     bot = Bot(token=config.bot.bot_token)
     dp = Dispatcher()
+
+    dp.include_router(user.router)
+    dp.include_router(other.router)
+
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
 
