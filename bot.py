@@ -3,7 +3,7 @@ import logging
 
 from aiogram import Bot, Dispatcher
 from src.config.config import Config, load_config
-from src.handlers import other, user
+from src.handlers import other, user, business, neuro
 
 
 # from aiogram.filters import Command
@@ -22,7 +22,6 @@ from src.handlers import other, user
 # @dp.message(Command("start"))
 # async def start_command(message: types.Message):
 #     await message.reply(text=START_COMMAND)
-
 
 
 # async def process_dialogue_request(message: types.Message, history: list):
@@ -116,6 +115,8 @@ async def main():
     dp = Dispatcher()
 
     dp.include_router(user.router)
+    dp.include_router(business.router)
+    dp.include_router(neuro.router)
     dp.include_router(other.router)
 
     await bot.delete_webhook(drop_pending_updates=True)

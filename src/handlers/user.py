@@ -9,6 +9,7 @@ from src.config.config import Config, load_config
 config: Config = load_config()
 router = Router()
 
+
 @router.message(CommandStart())
 async def process_start_command(message: Message):
     await message.answer(text=LEXICON_RU["/start"])

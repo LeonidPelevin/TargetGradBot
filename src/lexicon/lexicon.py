@@ -16,8 +16,16 @@ HELP_MESSAGE = """
 
 CAT_ERROR_MESSAGE = "Здесь должна была быть картинка с котиком :("
 
+UNKNOWN_COMMAND = """
+Неизвестная команда. Для получания списка доступных команд введите /help
+"""
+
+NOT_IMPLEMENTED_MESSAGE = "В разработке.."
+
 LEXICON_RU: dict[str, str] = {
     "/start": START_MESSAGE,
     "/help": HELP_MESSAGE,
     "cat_error": CAT_ERROR_MESSAGE,
+    "unknown_command": UNKNOWN_COMMAND,
+    "not_implemented": NOT_IMPLEMENTED_MESSAGE,
 }
