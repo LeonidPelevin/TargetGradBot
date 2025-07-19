@@ -25,5 +25,5 @@ START_COMMAND = """
 API_CATS_URL = "https://api.thecatapi.com/v1/images/search"
 ERROR_TEXT = "Здесь должна была быть картинка с котиком :("
 
-COMMANDS = ["/start", "/help", "/cat"]
+COMMANDS = ["/start", "/help", "/cat", "/go", "/neuro"]
 MAX_MESSAGE_LENGTH = 4096

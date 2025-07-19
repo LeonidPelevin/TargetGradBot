@@ -11,9 +11,29 @@ from src.config import *
 bot = Bot(BOT_TOKEN)
 dp = Dispatcher()
 
-
 class Dialogue(StatesGroup):
     active = State()
+
+@dp.message(Command("help"))
+async def help_command(message: types.Message):
+    await message.reply(text=HELP_COMMAND)
+
+
+@dp.message(Command("start"))
+async def start_command(message: types.Message):
+    await message.reply(text=START_COMMAND)
+
+
+@dp.message(Command("cat"))
+async def cat_command(message: types.Message):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(API_CATS_URL) as response:
+            if response.status == 200:
+                data = await response.json()
+                cat_link = data[0]["url"]
+                await message.reply_photo(photo=cat_link)
+            else:
+                await message.reply(text=ERROR_TEXT)
 
 
 async def process_dialogue_request(message: types.Message, history: list):
@@ -78,32 +98,10 @@ async def handle_dialogue(message: types.Message, state: FSMContext):
         await state.update_data(history=history)
 
 
-@dp.message(Command("help"))
-async def help_command(message: types.Message):
-    await message.reply(text=HELP_COMMAND)
-
-
-@dp.message(Command("start"))
-async def start_command(message: types.Message):
-    await message.reply(text=START_COMMAND)
-
-
-@dp.message(Command("cat"))
-async def cat_command(message: types.Message):
-    async with aiohttp.ClientSession() as session:
-        async with session.get(API_CATS_URL) as response:
-            if response.status == 200:
-                data = await response.json()
-                cat_link = data[0]["url"]
-                await message.reply_photo(photo=cat_link)
-            else:
-                await message.reply(text=ERROR_TEXT)
-
-
 @dp.message(
     lambda message: message.text
     and message.text.startswith("/")
-    and message.text not in COMMANDS
+    # and message.text not in COMMANDS
 )
 async def unknown_command(message: types.Message):
     await message.reply(
@@ -117,6 +115,7 @@ async def send_echo(message: types.Message):
         await message.answer(text=message.text * 2)
     else:
         await message.answer("Я могу ответить только на текстовые сообщения.")
+
 
 
 async def main():
