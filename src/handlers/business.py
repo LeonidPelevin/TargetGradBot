@@ -65,13 +65,18 @@ async def process_recommendation_request(
         user_answers=user_answers, programs_list=PROGRAMS_DATA
     )
     history = [
-        {"role": "system", "content": "Ты — профессиональный карьерный консультант. Отвечай строго на русском языке."},
+        {
+            "role": "system",
+            "content": "Ты — профессиональный карьерный консультант. Отвечай строго на русском языке.",
+        },
         {"role": "user", "content": prompt},
     ]
     try:
+
         def sync_call():
             return client.chat.completions.create(
-                model="meta-llama/Llama-3-8b-chat-hf", messages=history
+                # model="meta-llama/Llama-3-8b-chat-hf", messages=history
+                model="meta-llama/Llama-Vision-Free", messages=history
             )
 
         loop = asyncio.get_event_loop()
@@ -175,7 +180,9 @@ async def process_survey_step(
                 callback.message, final_answers_text
             )
             if recommendation:
-                await callback.message.answer(recommendation)
+                await callback.message.answer(
+                    recommendation + LEXICON_RU["site_reference"]
+                )
             await state.clear()
     await callback.answer()
 
@@ -228,6 +235,7 @@ async def handle_q9(callback: CallbackQuery, state: FSMContext):
 @router.callback_query(BusinessSurvey.q10, F.data.startswith("q_10:"))
 async def handle_q10(callback: CallbackQuery, state: FSMContext):
     await process_survey_step(callback, state, 10)
+
 
 # добавить в конец
 # 🎓 Подробнее о программах ты можешь узнать на нашем сайте https://targetgrade.lovable.app/
